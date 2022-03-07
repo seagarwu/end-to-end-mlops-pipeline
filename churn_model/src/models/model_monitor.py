@@ -17,13 +17,13 @@ def read_params(config_path):
 def model_monitoring(config_path):
     config = read_params(config_path)
     train_data_path = config["raw_data_config"]["raw_data_csv"]
-    new_train_data_path=config["raw_data_config"]["new_train_data_csv"]
+    old_train_data_path=config["raw_data_config"]["old_train_data_csv"]
     target = config["raw_data_config"]["target"]
     monitor_dashboard_path = config["model_monitor"]["monitor_dashboard_html"]
     monitor_target = config["model_monitor"]["target_col_name"]
 
-    ref=pd.read_csv(train_data_path)
-    cur=pd.read_csv(new_train_data_path)
+    ref=pd.read_csv(old_train_data_path)
+    cur=pd.read_csv(train_data_path)
 
     ref=ref.rename(columns ={target:monitor_target}, inplace = False)
     cur=cur.rename(columns ={target:monitor_target}, inplace = False)
