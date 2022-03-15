@@ -220,7 +220,7 @@ git ci -m "Add the unitest files that will be used by pytest"
   - 在Wait for CI to pass before deploy的方框打勾，並按Enable Automatic Deploys
 - Account Settings / Applications / Authorizations / Creation Authorizations: 建立1個authorization
   > 看起來所建立的authorization適用所有Heroku上的app name，所以只要建立一個即可。
-  - Description填上Github Actions (ci-cd.yaml)
+  - Description填上`Github Actions (ci-cd.yaml)`
   - 按Save則會產生Authorization token。之後會在Step 12填在Github的Actions secrets中。
 - requirements.txt和setup.py需移到根目錄 (move from ./churn_model/ to .)。Heroku執行時看起來只找根目錄的requirements.txt和setup.py。
 ```
@@ -257,9 +257,9 @@ git ci -m "Add ci-cd.yaml in .github/workflows"
 > 此動作完成後，在Github Actions就會開始執行ci-cd.yaml的building和對Heroku server的部署workflow。
 - 如果Heroku部署成功，此時用`heroku run bash -a churnmodel123`連進Heroku repo時就會看到跟Github repo一樣的檔案 (但還會多了幾個Heroku自建的檔案和目錄)。
 - debug小技巧:
-  - 如果ci-cd.yaml啟動後，從Github/Actions/All Workflows/目前正在跑的workflow，如果看到fail並卡在Deploy to Heroku，其錯誤訊息為`error: failed to push some refs to 'https://git.heroku.com/\*\*\*.git'`，則可以嘗試修改ci-cd.yaml，直接將HEROKU_API_TOKEN和HEROKU_APP_NAME代換成實際的值試試看。
+  - 如果ci-cd.yaml啟動後，從Github/Actions/All Workflows/目前正在跑的workflow中，如果看到fail並卡在Deploy to Heroku，其錯誤訊息為`error: failed to push some refs to 'https://git.heroku.com/***.git'`，則可以嘗試修改ci-cd.yaml，直接將HEROKU_API_TOKEN和HEROKU_APP_NAME代換成實際的值試試看。
 ### 每當需部署一版更高正確率的model時
-> models/model.joblib是production_model_selection.py根據max accuracy所產生的model檔。而再拷貝到web_app/model_webapp_dir/model.joblib是為了網頁執行預測時給app.py的predict()使用的，也就是當需部署最一版更高正確率的model時(需`git commit`時)所需做的動作。
+> models/model.joblib是production_model_selection.py根據max accuracy所產生的model檔。而再拷貝到web_app/model_webapp_dir/model.joblib是為了網頁執行預測時給app.py的predict()使用的，也就是當需部署一版更高正確率的model時(需`git commit`時)所需做的動作。
 - 建立deploy_best_model.sh
 ```
 #!/bin/sh -v
@@ -317,7 +317,7 @@ heroku run bash -a churnmodel123
   - 為了測試方便，直接將churn_model/data/raw/train.csv拷貝成train_new.csv
     - 示範網頁的流程有問題，正常來說，新dataset會放進churn_model/data/external/train.csv，然後跑`dvc repro raw_dataset_creation`之後會產生data/raw/train.csv。但是用model_monitor.py執行時卻希望train.csv為舊的，而train_new.csv為新的，這樣很奇怪。因此我做了些改變，將新舊之間做了調換。當需要執行model_monitor.py之前，須先手動將data/raw/train.csv改成train_old.csv，而執行model_monitor.sh之後，比較的就是train_old.csv和train.csv (新的)，這樣就正確了。
 - 建立churn_model/src/model/model_monitor.py
-  - 功能: 比較train.csv和train_new.csv，根據params.yaml輸出report成reports/data_and_target_drift_dashboard.html 
+  - 功能: 比較train_old.csv和train.csv，根據params.yaml輸出report成reports/data_and_target_drift_dashboard.html 
 ```
 cd churn_model/src/model
 git add model_monitor.py
@@ -357,7 +357,7 @@ gi ci -m "Add mlflow_srv.sh, train_model.sh, monitor_model.sh that are integrati
 ./push.sh
 ```
 ### 濃縮的SOP
-> 當kaggle資料放進churn_model/data/external、修改好app.py、src/裡的程式碼和params.yaml、ci-cd.yaml、也完成git、dvc、Github、Heroku設定，就可以執行以下的shell script檔。
+> 當kaggle資料放進churn_model/data/external、修改好app.py、src/裡的程式碼和params.yaml、ci-cd.yaml、也完成git、dvc、Github Actions、Heroku設定，就可以執行以下的shell script檔。
 - churn_model/mlflow_srv.sh
   - 執行一便即可。
 - train_model.sh
@@ -389,14 +389,14 @@ gi ci -m "Add mlflow_srv.sh, train_model.sh, monitor_model.sh that are integrati
     #!/bin/sh -v
     docker build -t localhost:4000/seagarwu/end-to-end-mlops-pipeline:v0
     ```
-    > v0是要release的版號，每當出新版時就要更新此版號 (e.g. v1.0)。最好tag、release和docker image的版號都是相同的
+    > v0是release的版號，每當出新版時就要更新此版號 (e.g. v1.0)。最好tag、release和docker image的版號都是相同的
   - run.sh
     ```
     #!/bin/sh -v
     docker run -d -it -v /mnt/g/我的雲端硬碟/docker/end-to-end-mlops-pipeline/data:/app/data \
     -p 5000:5000 --name end-to-end-mlops-pipeline localhost:4000/seagarwu/end-to-end-mlops-pipeline:v0
     ```
-    > v0是要release的版號，每當出新版時就要更新此版號 (e.g. v1.0)。最好tag、release和docker image的版號都是相同的
+    > v0是release的版號，每當出新版時就要更新此版號 (e.g. v1.0)。最好tag、release和docker image的版號都是相同的
 - 上傳至自建的container registry (Harbor) 所需的檔案:
   - docker_push.sh
     ```
@@ -447,6 +447,6 @@ git ci -m "Publish new release v1.0"
 ---
 ### 問題
 > 未來需優化的地方
-- model優化主要是針對params.yaml做修改，所以未來只要有一支程式能設定參數範圍，並將參數自動填到params.yaml，然後再執行train_model.sh就可以完成model的優化。
-- 找看看model registry都是用哪個軟體來做。
+- model優化主要是針對params.yaml做修改，所以未來只要有一支程式(e.g. optuna)能設定參數範圍，並將參數自動填到params.yaml，然後再執行train_model.sh就可以完成model的優化。
+- 找看看model registry和feature store都是用哪個app來做。
 - 示範網頁在evidently只比較兩個新舊dataset檔案，但在程式交易上不只一個dataset檔案。
